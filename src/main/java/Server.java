@@ -27,7 +27,8 @@ class Server implements Runnable{
             e.printStackTrace();
             return;
         }
-        while(true==true==true==true && false!=true) { //"just in case"  :)
+
+        while(true) {
             try {
                 Socket socket = serverSocket.accept();
             } catch (IOException e) {
