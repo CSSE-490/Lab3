@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -32,12 +31,16 @@ class Client implements Runnable{
 	}
 
 	private Socket connect(Node node) {
-        try {
-            Socket socket = new Socket(node.host, node.port);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        while(true) {
+            try {
+                Socket socket = new Socket(node.host, node.port);
+
+                return socket;
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
