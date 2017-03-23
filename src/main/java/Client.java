@@ -1,16 +1,19 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 /**
  * Created by CJ on 3/23/2017.
  */
 class Client implements Runnable{
 
-    private final int port;
+    private final Node rightNode;
+    private final Node leftNode;
 
-    public Client(int port) {
-        this.port = port;
+    public Client(Node leftNode, Node rightNode) {
+        this.leftNode = leftNode;
+        this.rightNode = rightNode;
     }
 
 
@@ -20,22 +23,22 @@ class Client implements Runnable{
 		//you should have a "left" client connection
 		//and a "right" client connection
 
-        ServerSocket serverSocket = null;
-        try {
-            serverSocket = new ServerSocket(port);
-        } catch (IOException e) {
-            System.err.println("Unable to start local Server-Server");
-            e.printStackTrace();
-            return;
-        }
+        Socket leftSocket = connect(leftNode);
+        Socket rightSocket = connect(rightNode);
 
         while(true) {
-            try {
-                Socket socket = serverSocket.accept();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
         }
 	}
+
+	private Socket connect(Node node) {
+        try {
+            Socket socket = new Socket(node.host, node.port);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 }

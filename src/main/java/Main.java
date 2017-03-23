@@ -4,9 +4,11 @@
 public class Main {
     public static void main(String[] args) {
 
+        int serverPort = 5555;
+
         //create new instances of Client and Server
-        Runnable r1 = new Client(5555);
-        Runnable r2 = new Server(6666);
+        Runnable r1 = new Client(null,null);
+        Runnable r2 = new Server(serverPort);
 
 
         //Create threads to run Client and Server as Threads
