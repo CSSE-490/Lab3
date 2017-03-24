@@ -2,6 +2,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
 /**
@@ -20,17 +22,43 @@ public class Main {
         Thread t2 = new Thread(r2);
         t2.start();
 
-        System.out.println("IP:Port of first Connection");
-        String input = reader.readLine();
-        Node left = getNode(input);
+        System.out.println("Press enter to proceed to connection input.");
+        reader.readLine();
 
-        System.out.println("IP:Port of the second Connection");
-        input = reader.readLine();
-        Node right = getNode(input);
-        
-        Runnable r1 = new Client(left,right);
-        Thread t1 = new Thread(r1);
-        t1.start();
+        try {
+            if(Communicator.INSTANCE.leftSocket == null) {
+                System.out.println("IP:Port of left Connection");
+                String input = reader.readLine();
+                Node left = getNode(input);
+
+
+                Socket socket = new Socket(left.host, left.port);
+
+                ClientResponder leftClient = new ClientResponder(socket);
+                leftClient.registerAsLeft();
+                new Thread(leftClient).start();
+            }
+            if(Communicator.INSTANCE.rightSocket == null) {
+                System.out.println("IP:Port of the right Connection");
+                String input = reader.readLine();
+                Node right = getNode(input);
+
+                Socket socket = new Socket(right.host, right.port);
+
+                ClientResponder rightClient = new ClientResponder(socket);
+                rightClient.registerAsRight();
+                new Thread(rightClient).start();
+            }
+        } catch (UnknownHostException e) {
+            System.err.println("Invalid Arguments");
+            e.printStackTrace();
+            System.exit(1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Start Philosopher Code
+        Philosopher.INSTANCE.wakeUp();
     }
 
     private static Node getNode(String s) {

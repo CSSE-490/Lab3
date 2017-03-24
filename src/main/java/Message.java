@@ -2,12 +2,13 @@
  * Created by CJ on 3/24/2017.
  */
 public enum Message {
-    I_AM_LEFT ("I am Left"),
-    I_AM_RIGHT ("I am Right"),
-    DO_YOU_HAVE_LEFT_CHOPSTICK ("Do you have the left chopstick"),
-    DO_YOU_HAVE_RIGHT_CHOPSTICK ("Do you have the right chopstick"),
-    I_HAVE_LEFT_CHOPSTICK ("I have the left chopstick"),
-    I_HAVE_RIGHT_CHOPSTICK ("I have the right chopstick");
+
+    REQUEST_LEFT_CHOPSTICK ("I am requesting the left chopstick"),
+    REQUEST_RIGHT_CHOPSTICK ("I am requesting the right chopstick"),
+    YES ("Yes, here you go"),
+    NO ("No, you may not"),
+    YOU_ARE_MY_LEFT ("You are my left node"),
+    YOU_ARE_MY_RIGHT ("You are my right node");
 
     private final String message;
 
