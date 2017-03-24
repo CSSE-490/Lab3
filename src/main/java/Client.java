@@ -15,29 +15,34 @@ class Client implements Runnable{
         this.rightNode = rightNode;
     }
 
-
 	@Override
 	public void run() {
 		//all client code here
 		//you should have a "left" client connection
 		//and a "right" client connection
 
-        Socket leftSocket = connect(leftNode);
-        Socket rightSocket = connect(rightNode);
+        try {
+            Socket leftSocket = connect(leftNode);
+            Socket rightSocket = connect(rightNode);
+        } catch (UnknownHostException e) {
+            System.err.println("Invalid Arguments");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
 
         while(true) {
 
         }
 	}
 
-	private Socket connect(Node node) {
+	private Socket connect(Node node) throws UnknownHostException {
         while(true) {
             try {
                 Socket socket = new Socket(node.host, node.port);
 
+
                 return socket;
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
