@@ -24,7 +24,4 @@ public class Philosopher {
     public synchronized boolean isEating() {
         return leftChopstick && rightChopstick && hungry;
     }
-
-    
-
 }
