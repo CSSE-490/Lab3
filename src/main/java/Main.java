@@ -58,7 +58,18 @@ public class Main {
         }
 
         // Start Philosopher Code
-        Philosopher.INSTANCE.wakeUp();
+        //Philosopher.INSTANCE.wakeUp();
+
+        while(true) {
+            String input = reader.readLine();
+            switch (input) {
+                case "start":
+                    Communicator.INSTANCE.leftSocket.sendWakeup();
+                    Communicator.INSTANCE.rightSocket.sendWakeup();
+                    Philosopher.INSTANCE.wakeUp();
+                    break;
+            }
+        }
     }
 
     private static Node getNode(String s) {

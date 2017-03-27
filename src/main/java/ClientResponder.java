@@ -9,6 +9,7 @@ public class ClientResponder implements Runnable {
     private final BufferedReader reader;
     private final BufferedWriter writer;
     private final Socket socket;
+    private boolean isLeft;
 
     public ClientResponder(Socket socket) throws IOException {
         this.socket = socket;
@@ -19,67 +20,90 @@ public class ClientResponder implements Runnable {
     @Override
     public void run() {
         while (true) {
+            String messageRaw = null;
             try {
-                String messageRaw = reader.readLine();
-
-                Message message = Message.valueOf(messageRaw);
-
-                switch (message) {
-                    case REQUEST_LEFT_CHOPSTICK:
-                        boolean request = Table.INSTANCE.requestLeftChopstick();
-
-                        if (request) {
-                            sendMessage(Message.YES);
-                        } else {
-                            sendMessage(Message.NO);
-                        }
-
-                        break;
-                    case REQUEST_RIGHT_CHOPSTICK:
-                        request = Table.INSTANCE.requestRightChopstick();
-
-                        if (request) {
-                            sendMessage(Message.YES);
-                        } else {
-                            sendMessage(Message.NO);
-                        }
-
-                        break;
-                    case YOU_ARE_MY_LEFT:
-                        Communicator.INSTANCE.rightSocket = this;
-                        System.out.println("A client has identified as my right");
-                        break;
-                    case YOU_ARE_MY_RIGHT:
-                        Communicator.INSTANCE.leftSocket = this;
-                        System.out.println("A client has identified as my left");
-                        break;
-                    default:
-                        System.err.println("Received invalid message from a client, Message: " + messageRaw);
-                        break;
-                }
+                messageRaw = reader.readLine();
             } catch (IOException e) {
                 e.printStackTrace();
+                return;
+            }
+
+            Message message = Message.valueOf(messageRaw);
+
+            switch (message) {
+                case REQUEST_CHOPSTICK:
+                    boolean available = Philosopher.INSTANCE.requestChopstick(isLeft);
+
+                    if (available) {
+                        sendMessage(Message.YES);
+                    } else {
+                        sendMessage(Message.NO);
+                    }
+
+                    break;
+
+                case YOU_ARE_MY_LEFT:
+                    Communicator.INSTANCE.rightSocket = this;
+                    this.isLeft = false;
+                    System.out.println("A client has identified as my right");
+                    break;
+
+                case YOU_ARE_MY_RIGHT:
+                    Communicator.INSTANCE.leftSocket = this;
+                    this.isLeft = true;
+                    System.out.println("A client has identified as my left");
+                    break;
+
+                case YES:
+                    Philosopher.INSTANCE.takeChopstick(isLeft);
+                    break;
+
+                case NO:
+                    break;
+
+                case WAKE_UP:
+                    Philosopher.INSTANCE.wakeUp();
+                    break;
+
+                default:
+                    System.err.println("Received invalid message from a client, Message: " + messageRaw);
+                    break;
             }
         }
     }
 
-    public void registerAsLeft() throws IOException {
+    public void registerAsLeft() {
         sendMessage(Message.YOU_ARE_MY_LEFT);
         Communicator.INSTANCE.leftSocket = this;
+        this.isLeft = true;
     }
 
-    public void registerAsRight() throws IOException {
+    public void registerAsRight() {
         sendMessage(Message.YOU_ARE_MY_RIGHT);
         Communicator.INSTANCE.rightSocket = this;
+        this.isLeft = false;
     }
 
-    private void sendMessage(Message s) throws IOException {
-        writer.write(s + "\n");
-        writer.flush();
+    private void sendMessage(Message s) {
+        try {
+            writer.write(s + "\n");
+            writer.flush();
+        } catch (IOException e) {
+            System.err.println("Unable to communicate with via " + this.toString());
+        }
+
     }
 
     @Override
     public String toString() {
-        return String.format("%s:%s:%s",socket.getInetAddress(), socket.getLocalPort(), socket.getPort());
+        return String.format("%s:%s:%s", socket.getInetAddress(), socket.getLocalPort(), socket.getPort());
+    }
+
+    public void requestChopstick() {
+        this.sendMessage(Message.REQUEST_CHOPSTICK);
+    }
+
+    public void sendWakeup() {
+        this.sendMessage(Message.WAKE_UP);
     }
 }

@@ -3,12 +3,12 @@
  */
 public enum Message {
 
-    REQUEST_LEFT_CHOPSTICK ("I am requesting the left chopstick"),
-    REQUEST_RIGHT_CHOPSTICK ("I am requesting the right chopstick"),
+    REQUEST_CHOPSTICK ("I am requesting the chopstick"),
     YES ("Yes, here you go"),
     NO ("No, you may not"),
     YOU_ARE_MY_LEFT ("You are my left node"),
-    YOU_ARE_MY_RIGHT ("You are my right node");
+    YOU_ARE_MY_RIGHT ("You are my right node"),
+    WAKE_UP("Yo, wake up bruh");
 
     private final String message;
 
