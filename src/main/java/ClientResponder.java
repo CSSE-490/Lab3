@@ -11,6 +11,8 @@ public class ClientResponder implements Runnable {
     private final Socket socket;
     private boolean isLeft;
 
+    private boolean onGoingRequest;
+
     public ClientResponder(Socket socket) throws IOException {
         this.socket = socket;
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -56,9 +58,12 @@ public class ClientResponder implements Runnable {
 
                 case YES:
                     Philosopher.INSTANCE.takeChopstick(isLeft);
+                    onGoingRequest = false;
                     break;
 
                 case NO:
+                    Philosopher.INSTANCE.dropChopstick(isLeft);
+                    onGoingRequest = false;
                     break;
 
                 case WAKE_UP:
@@ -90,6 +95,7 @@ public class ClientResponder implements Runnable {
             writer.flush();
         } catch (IOException e) {
             System.err.println("Unable to communicate with via " + this.toString());
+            System.exit(1);
         }
 
     }
@@ -100,7 +106,10 @@ public class ClientResponder implements Runnable {
     }
 
     public void requestChopstick() {
-        this.sendMessage(Message.REQUEST_CHOPSTICK);
+        if(!onGoingRequest) {
+            onGoingRequest = true;
+            this.sendMessage(Message.REQUEST_CHOPSTICK);
+        }
     }
 
     public void sendWakeup() {

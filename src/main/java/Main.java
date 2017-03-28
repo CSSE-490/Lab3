@@ -60,6 +60,7 @@ public class Main {
         // Start Philosopher Code
         //Philosopher.INSTANCE.wakeUp();
 
+        System.out.println("Ready for user input");
         while(true) {
             String input = reader.readLine();
             switch (input) {
