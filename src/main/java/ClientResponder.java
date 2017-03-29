@@ -65,7 +65,6 @@ public class ClientResponder implements Runnable {
                     Philosopher.INSTANCE.dropChopstick(isLeft);
                     onGoingRequest = false;
                     break;
-
                 case WAKE_UP:
                     Philosopher.INSTANCE.wakeUp();
                     break;
