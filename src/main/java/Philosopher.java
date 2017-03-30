@@ -148,4 +148,10 @@ public class Philosopher implements Runnable {
         System.out.println("Finished eating, thinking now.");
 
     }
+
+    public boolean isHungry() {
+        return hungry;
+    }
+
+
 }

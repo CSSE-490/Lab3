@@ -1,7 +1,12 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.ParseException;
@@ -98,6 +103,67 @@ public class Main {
                 case "thinking":
                     Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
                     break;
+                case "gui":
+                    JFrame frame = new JFrame("Philosopher");
+                    JPanel panel = new JPanel();
+                    JButton button = new JButton("Philosopher is hungry: " + Philosopher.INSTANCE.isHungry());
+                    button.addActionListener((ae) -> {
+                        if(Philosopher.INSTANCE.isHungry()) {
+                            Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
+                        } else {
+                            Philosopher.INSTANCE.nowHungry(System.currentTimeMillis());
+                        }
+                    });
+                    panel.add(button);
+                    frame.add(panel);
+                    frame.pack();
+                    frame.addWindowListener(new WindowListener() {
+                        private Thread thread;
+                        private boolean shouldStop;
+                        @Override
+                        public void windowOpened(WindowEvent we) {
+                            thread = new Thread(() -> {
+                                while(true) {
+                                    if(shouldStop)
+                                        return;
+                                    try {
+                                        EventQueue.invokeAndWait(() -> button.setText("Philosopher is hungry: " + Philosopher.INSTANCE.isHungry()));
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    } catch (InvocationTargetException e) {
+                                        e.printStackTrace();
+                                    }
+                                    try {
+                                        Thread.sleep(100);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+                            thread.start();
+                        }
+
+                        @Override
+                        public void windowClosing(WindowEvent e) { }
+
+                        @Override
+                        public void windowClosed(WindowEvent e) {
+                            shouldStop = true;
+                        }
+
+                        @Override
+                        public void windowIconified(WindowEvent e) { }
+
+                        @Override
+                        public void windowDeiconified(WindowEvent e) { }
+
+                        @Override
+                        public void windowActivated(WindowEvent e) { }
+
+                        @Override
+                        public void windowDeactivated(WindowEvent e) { }
+                    });
+                    frame.setVisible(true);
             }
         }
     }

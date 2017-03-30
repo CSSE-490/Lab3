@@ -23,18 +23,26 @@ public class FastStart {
         Thread.sleep(sleepTime);
 
         if(Communicator.INSTANCE.leftSocket == null) {
-            Socket socket = new Socket(left.host, left.port);
+            try {
+                Socket socket = new Socket(left.host, left.port);
 
-            ClientResponder leftClient = new ClientResponder(socket);
-            leftClient.registerAsLeft();
-            new Thread(leftClient).start();
+                ClientResponder leftClient = new ClientResponder(socket);
+                leftClient.registerAsLeft();
+                new Thread(leftClient).start();
+            } catch (IOException ignored) {
+                System.err.println("Unable to connect to left client");
+            }
         }
         if(Communicator.INSTANCE.rightSocket == null) {
-            Socket socket = new Socket(right.host, right.port);
+            try {
+                Socket socket = new Socket(right.host, right.port);
 
-            ClientResponder rightClient = new ClientResponder(socket);
-            rightClient.registerAsRight();
-            new Thread(rightClient).start();
+                ClientResponder rightClient = new ClientResponder(socket);
+                rightClient.registerAsRight();
+                new Thread(rightClient).start();
+            } catch (IOException ignored) {
+                System.err.println("Unable to connect to right client");
+            }
         }
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
