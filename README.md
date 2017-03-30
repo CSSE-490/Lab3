@@ -1,4 +1,4 @@
-#Philosopher Problem
+# Philosopher Problem
 ## Authors:
 CJ Miller, Andrew Pokorny, Jesse Shellabarger
 ## How to Use
