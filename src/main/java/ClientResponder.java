@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.Socket;
+import java.util.Random;
 
 /**
  * Created by CJ on 3/24/2017.
@@ -12,6 +13,7 @@ public class ClientResponder implements Runnable {
     private boolean isLeft;
 
     private boolean onGoingRequest;
+    private boolean onRequestCooldown;
 
     public ClientResponder(Socket socket) throws IOException {
         this.socket = socket;
@@ -34,6 +36,23 @@ public class ClientResponder implements Runnable {
 
             switch (message) {
                 case REQUEST_CHOPSTICK:
+                    if(onGoingRequest) {
+                        sendMessage(Message.NO);
+                        onRequestCooldown = true;
+                        new Thread(() -> {
+                            try {
+                                Thread.sleep(Math.round(Math.random() * 100));
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            onGoingRequest = true;
+                            onRequestCooldown = false;
+                            sendMessage(Message.REQUEST_CHOPSTICK);
+                        }).start();
+                        onGoingRequest = false;
+                        break;
+                    }
+
                     boolean available = Philosopher.INSTANCE.requestChopstick(isLeft);
 
                     if (available) {
@@ -60,15 +79,17 @@ public class ClientResponder implements Runnable {
                     Philosopher.INSTANCE.takeChopstick(isLeft);
                     onGoingRequest = false;
                     break;
-
                 case NO:
                     Philosopher.INSTANCE.dropChopstick(isLeft);
                     onGoingRequest = false;
                     break;
                 case WAKE_UP:
-                    Philosopher.INSTANCE.wakeUp();
+                    if (!Philosopher.INSTANCE.isAwake()) {
+                        if (isLeft) Communicator.INSTANCE.rightSocket.sendMessage(Message.WAKE_UP);
+                        else  Communicator.INSTANCE.leftSocket.sendMessage(Message.WAKE_UP);
+                        Philosopher.INSTANCE.wakeUp();
+                    }
                     break;
-
                 default:
                     System.err.println("Received invalid message from a client, Message: " + messageRaw);
                     break;
@@ -105,7 +126,7 @@ public class ClientResponder implements Runnable {
     }
 
     public void requestChopstick() {
-        if(!onGoingRequest) {
+        if(!(onGoingRequest || onRequestCooldown)) {
             onGoingRequest = true;
             this.sendMessage(Message.REQUEST_CHOPSTICK);
         }

@@ -12,6 +12,9 @@ public class FastStart {
         Node left = getNode(args[1]);
         Node right = getNode(args[2]);
         long sleepTime = Long.parseLong(args[3]);
+        int tickRAte = Integer.parseInt(args[4]);
+
+        Philosopher.INSTANCE.setStarvationTime(tickRAte);
 
         Runnable r2 = new Server(port);
         Thread t2 = new Thread(r2);
@@ -34,18 +37,8 @@ public class FastStart {
             new Thread(rightClient).start();
         }
 
-        System.out.println("Ready for user input");
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        while(true) {
-            String input = reader.readLine();
-            switch (input) {
-                case "start":
-                    Communicator.INSTANCE.leftSocket.sendWakeup();
-                    Communicator.INSTANCE.rightSocket.sendWakeup();
-                    Philosopher.INSTANCE.wakeUp();
-                    break;
-            }
-        }
+        Main.repl(reader);
     }
 
     private static Node getNode(String s) {

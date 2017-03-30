@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.ParseException;
 import java.util.Scanner;
 
 /**
@@ -11,8 +12,14 @@ import java.util.Scanner;
  */
 public class Main {
     public static void main(String[] args) throws IOException {
-        System.out.println("Local Server Port");
+        try {
+            Philosopher.INSTANCE.setStarvationTime(Integer.parseInt(args[0]));
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid tick rate provided");
+            System.exit(1);
+        }
 
+        System.out.println("Local Server Port");
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String port = reader.readLine();
@@ -60,17 +67,8 @@ public class Main {
         // Start Philosopher Code
         //Philosopher.INSTANCE.wakeUp();
 
-        System.out.println("Ready for user input");
-        while(true) {
-            String input = reader.readLine();
-            switch (input) {
-                case "start":
-                    Communicator.INSTANCE.leftSocket.sendWakeup();
-                    Communicator.INSTANCE.rightSocket.sendWakeup();
-                    Philosopher.INSTANCE.wakeUp();
-                    break;
-            }
-        }
+        repl(reader);
+
     }
 
     private static Node getNode(String s) {
@@ -80,5 +78,27 @@ public class Main {
         }
 
         return new Node(array[0], Integer.parseInt(array[1]));
+    }
+
+    public static void repl(BufferedReader reader) throws IOException {
+        System.out.println("Ready for user input");
+        while(true) {
+            String input = reader.readLine();
+            switch (input) {
+                case "start":
+                    Communicator.INSTANCE.leftSocket.sendWakeup();
+                    Communicator.INSTANCE.rightSocket.sendWakeup();
+                    Philosopher.INSTANCE.wakeUp();
+                    break;
+
+                case "hungry":
+                    Philosopher.INSTANCE.nowHungry(System.currentTimeMillis());
+                    break;
+
+                case "thinking":
+                    Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
+                    break;
+            }
+        }
     }
 }

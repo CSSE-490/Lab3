@@ -10,22 +10,29 @@ public class Philosopher implements Runnable {
         INSTANCE = new Philosopher();
     }
 
+    private long starvationTime = 4000L;
     private volatile boolean hasLeftChopstick;
     private volatile boolean hasRightChopstick;
     private volatile boolean hungry;
     private long timeLastAte;
     private long startedEating = 0L;
     private long startedThinking = 0L;
-    private long hungrySince = 0L;
+    private long startedChopstickAttempt = 0L;
+    private boolean awake;
 
     private Philosopher() {
         this.hasLeftChopstick = false;
         this.hasRightChopstick = false;
         this.hungry = new Random().nextBoolean();
+        this.awake = false;
     }
 
-    public synchronized boolean isThinking() {
-        return !(hasLeftChopstick || hasRightChopstick) && !hungry;
+    public synchronized boolean isAwake() {
+        return this.awake;
+    }
+
+    public void setStarvationTime(long starvationTime) {
+        this.starvationTime = starvationTime;
     }
 
     public synchronized boolean isEating() {
@@ -34,10 +41,14 @@ public class Philosopher implements Runnable {
 
     public synchronized void wakeUp() {
         this.timeLastAte = System.currentTimeMillis();
-        if(!this.hungry)
+        if (this.hungry) {
+            this.startedChopstickAttempt = System.currentTimeMillis();
+        } else {
             this.startedThinking = System.currentTimeMillis();
+        }
 
         new Thread(this).start();
+        this.awake = true;
         System.out.println("Started philosopher");
     }
 
@@ -50,39 +61,34 @@ public class Philosopher implements Runnable {
 
         while (true) {
             long currentTime = System.currentTimeMillis();
-            System.out.format("%d: %b:%b:%b\n", currentTime, this.hungry, this.hasLeftChopstick, this.hasRightChopstick);
+//            System.out.format("Current Time: %d\n", currentTime);
+//            System.out.format("Is hungry: %b since %d\n", this.hungry, this.startedChopstickAttempt - currentTime);
+//            System.out.format("Last ate: %d    startedEating: %d\n", this.timeLastAte - currentTime, startedEating - currentTime);
+//            System.out.format("Table state, Left: %b  Right: %b\n", this.hasLeftChopstick, this.hasRightChopstick);
 
 
             // If eating, reset timestamp
             if (isEating()) this.timeLastAte = currentTime;
 
-            if (this.timeLastAte + 4000L < currentTime) {
+            if (this.timeLastAte + starvationTime < currentTime) {
                 System.err.println("I starved");
                 System.exit(1);
             }
 
 
-            if (isEating() && 1000L + startedEating > currentTime) { // check how long we've been eating and stop if necessary
-                synchronized (this) {
-                    this.hasLeftChopstick = false;
-                    this.hasRightChopstick = false;
-                    this.hungry = false;
-                    this.startedThinking = currentTime;
-                }
-                System.out.println("Finished eating, thinking now.");
-            } else if (!this.hungry && 1000L + startedThinking > currentTime) { // Don't think for more than 1 second
-                synchronized (this) {
-                    this.hungry = true;
-                    this.hungrySince = currentTime;
-                }
-                System.out.println("Done thinking, now hungry");
-            } else if (this.hungry && !this.isEating() && hungrySince + 100L > currentTime) {
+            if (isEating() && (starvationTime / 40 + startedEating < currentTime || Math.random() > 0.9)) { // check how long we've been eating and stop if necessary
+                nowThinking(currentTime);
+            } else if (!this.hungry && (starvationTime / 4 + startedThinking < currentTime || Math.random() > 0.99)) { // Don't think for more than 1 second
+                this.nowHungry(currentTime);
+            } else if (this.hungry && !this.isEating() && startedChopstickAttempt + starvationTime / 40 < currentTime) {
                 synchronized (this) {
                     hasLeftChopstick = false;
                     hasRightChopstick = false;
                 }
                 try {
-                    Thread.sleep(100);
+                    System.err.println("Sleeping for a bit");
+                    Thread.sleep(Math.round(Math.random() * starvationTime / 40.0));
+                    startedChopstickAttempt = System.currentTimeMillis();
                 } catch (InterruptedException e) {
                 }
             }
@@ -95,7 +101,7 @@ public class Philosopher implements Runnable {
                 }
             }
             try {
-                Thread.sleep(1);
+                Thread.sleep(Math.round(Math.ceil(starvationTime / 4000.0)));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -121,10 +127,25 @@ public class Philosopher implements Runnable {
     }
 
     public synchronized void dropChopstick(boolean isLeft) {
-        if(isLeft) {
+        if (isLeft) {
             this.hasLeftChopstick = false;
         } else {
             this.hasRightChopstick = false;
         }
+    }
+
+    public synchronized void nowHungry(long currentTime) {
+        this.hungry = true;
+        this.startedChopstickAttempt = currentTime;
+        System.out.println("Done thinking, now hungry");
+    }
+
+    public synchronized void nowThinking(long currentTime) {
+        this.hasLeftChopstick = false;
+        this.hasRightChopstick = false;
+        this.hungry = false;
+        this.startedThinking = currentTime;
+        System.out.println("Finished eating, thinking now.");
+
     }
 }
