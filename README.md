@@ -1,6 +1,6 @@
 # Philosopher Problem
 ## Authors:
-CJ Miller, Andrew Pokorny, Jesse Shellabarger
+CJ Miller and Jesse Shellabarger
 ## How to Use
 * Fast Start
     * Uses the program arguments to setup the network.
