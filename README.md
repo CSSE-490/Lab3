@@ -1,4 +1,4 @@
-# Philosopher Problem
+# Drinking Philosopher Problem
 ## Authors:
 CJ Miller and Jesse Shellabarger
 ## How to Use
