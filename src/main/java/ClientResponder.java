@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.Random;
 
 /**
  * Created by CJ on 3/24/2017.
@@ -24,7 +23,7 @@ public class ClientResponder implements Runnable {
     @Override
     public void run() {
         while (true) {
-            String messageRaw = null;
+            String messageRaw;
             try {
                 messageRaw = reader.readLine();
             } catch (IOException e) {
@@ -37,7 +36,7 @@ public class ClientResponder implements Runnable {
             switch (message) {
                 case REQUEST_CHOPSTICK:
                     if(onGoingRequest) {
-                        sendMessage(Message.NO);
+                        sendMessage(Message.NO_CHOPSTICK);
                         onRequestCooldown = true;
                         new Thread(() -> {
                             try {
@@ -56,9 +55,9 @@ public class ClientResponder implements Runnable {
                     boolean available = Philosopher.INSTANCE.requestChopstick(isLeft);
 
                     if (available) {
-                        sendMessage(Message.YES);
+                        sendMessage(Message.YES_CHOPSTICK);
                     } else {
-                        sendMessage(Message.NO);
+                        sendMessage(Message.NO_CHOPSTICK);
                     }
 
                     break;
@@ -75,11 +74,11 @@ public class ClientResponder implements Runnable {
                     System.out.println("A client has identified as my left");
                     break;
 
-                case YES:
+                case YES_CHOPSTICK:
                     Philosopher.INSTANCE.takeChopstick(isLeft);
                     onGoingRequest = false;
                     break;
-                case NO:
+                case NO_CHOPSTICK:
                     Philosopher.INSTANCE.dropChopstick(isLeft);
                     onGoingRequest = false;
                     break;
@@ -117,15 +116,19 @@ public class ClientResponder implements Runnable {
             System.err.println("Unable to communicate with via " + this.toString());
             System.exit(1);
         }
-
     }
 
-    @Override
+   @Override
     public String toString() {
         return String.format("%s:%s:%s", socket.getInetAddress(), socket.getLocalPort(), socket.getPort());
     }
 
     public void requestChopstick() {
+        if(socket.isClosed()) {
+            Philosopher.INSTANCE.takeChopstick(isLeft);
+            return;
+        }
+
         if(!(onGoingRequest || onRequestCooldown)) {
             onGoingRequest = true;
             this.sendMessage(Message.REQUEST_CHOPSTICK);
@@ -134,5 +137,17 @@ public class ClientResponder implements Runnable {
 
     public void sendWakeup() {
         this.sendMessage(Message.WAKE_UP);
+    }
+
+    public void close() {
+        try {
+            this.socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if(isLeft) {
+
+        }
     }
 }
