@@ -1,4 +1,4 @@
-# Drinking logic.Philosopher Problem
+# Drinking Philosopher Problem
 ## Authors:
 CJ Miller and Jesse Shellabarger
 ## How to Use
@@ -12,9 +12,9 @@ CJ Miller and Jesse Shellabarger
     
 ### REPL Commands
 * `start` : Begins the algorithm and propagates that to the other Philosophers 
-* `gui` : Opens a JFrame that allows manual switching of the local logic.Philosopher
-* `hungry` : Forces the local logic.Philosopher into the hungry state
-* `thinking` : Forces the local logic.Philosopher into the thinking state
+* `gui` : Opens a JFrame that allows manual switching of the local Philosopher
+* `hungry` : Forces the local Philosopher into the hungry state
+* `thinking` : Forces the local Philosopher into the thinking state
 
 ## Incentive
 * GUI (via the `gui` command)
