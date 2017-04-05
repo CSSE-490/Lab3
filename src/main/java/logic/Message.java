@@ -1,3 +1,5 @@
+package logic;
+
 /**
  * Created by CJ on 3/24/2017.
  */
@@ -8,7 +10,9 @@ public enum Message {
     NO_CHOPSTICK("No, you may not have the chopstick"),
     YOU_ARE_MY_LEFT ("You are my left node"),
     YOU_ARE_MY_RIGHT ("You are my right node"),
-    WAKE_UP("Yo, wake up bruh");
+    WAKE_UP("Yo, wake up bruh"),
+    REQUEST_CUP("I am requesting the Great Cup"),
+    FORWARD_REQUEST_CUP("I am forwarding a request of the Great Cup");
 
     private final String message;
 

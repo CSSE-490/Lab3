@@ -1,3 +1,11 @@
+package main;
+
+import logic.*;
+import network.ClientResponder;
+import network.Communicator;
+import network.Node;
+import network.Server;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
@@ -5,12 +13,9 @@ import java.awt.event.WindowListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.text.ParseException;
-import java.util.Scanner;
 
 /**
  * Created by CJ on 3/23/2017.
@@ -18,21 +23,22 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) throws IOException {
         try {
-            Philosopher.INSTANCE.setStarvationTime(Integer.parseInt(args[0]));
+            Settings.starvationTime = Integer.parseInt(args[0]);
         } catch (NumberFormatException e) {
             System.err.println("Invalid tick rate provided");
             System.exit(1);
         }
 
-        System.out.println("Local Server Port");
+        System.out.println("Local network.Server Port");
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String port = reader.readLine();
 
         int serverPort = Integer.parseInt(port);
-        Runnable r2 = new Server(serverPort);
-        Thread t2 = new Thread(r2);
-        t2.start();
+        Server.createServer(serverPort);
+
+        System.out.println("How many Philosophers are there?");
+        Settings.numberPhilosopher = Integer.parseInt(reader.readLine());
 
         System.out.println("Press enter to proceed to connection input.");
         reader.readLine();
@@ -69,8 +75,8 @@ public class Main {
             e.printStackTrace();
         }
 
-        // Start Philosopher Code
-        //Philosopher.INSTANCE.wakeUp();
+        // Start logic.Philosopher Code
+        //logic.Philosopher.INSTANCE.wakeUp();
 
         repl(reader);
 
@@ -104,9 +110,9 @@ public class Main {
                     Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
                     break;
                 case "gui":
-                    JFrame frame = new JFrame("Philosopher");
+                    JFrame frame = new JFrame("logic.Philosopher");
                     JPanel panel = new JPanel();
-                    JButton button = new JButton("Philosopher is hungry: " + Philosopher.INSTANCE.isHungry());
+                    JButton button = new JButton("logic.Philosopher is hungry: " + Philosopher.INSTANCE.isHungry());
                     button.addActionListener((ae) -> {
                         if(Philosopher.INSTANCE.isHungry()) {
                             Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
@@ -127,7 +133,7 @@ public class Main {
                                     if(shouldStop)
                                         return;
                                     try {
-                                        EventQueue.invokeAndWait(() -> button.setText("Philosopher is hungry: " + Philosopher.INSTANCE.isHungry()));
+                                        EventQueue.invokeAndWait(() -> button.setText("logic.Philosopher is hungry: " + Philosopher.INSTANCE.isHungry()));
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     } catch (InvocationTargetException e) {

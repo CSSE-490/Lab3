@@ -1,9 +1,17 @@
+package logic;
+
+
+import main.Settings;
+import network.Communicator;
+import network.ConnectionAttempter;
+import network.Server;
+
 import java.util.Random;
 
 /**
  * Created by CJ on 3/24/2017.
  */
-public class Philosopher implements Runnable {
+public class Philosopher {
 
     public static Philosopher INSTANCE;
 
@@ -11,7 +19,6 @@ public class Philosopher implements Runnable {
         INSTANCE = new Philosopher();
     }
 
-    private long starvationTime = 4000L;
     private volatile boolean hasLeftChopstick;
     private volatile boolean hasRightChopstick;
     private volatile boolean hasCup;
@@ -25,22 +32,22 @@ public class Philosopher implements Runnable {
     private long startedChopstickAttempt = 0L;
     private long passedOutAt;
     private long startedDrinking;
-    private boolean awake;
+    private boolean running;
     private boolean isPassedOut;
+
+    private int drinkingRequests;
+    private long sentCupRequest;
+    private boolean requestingCup;
 
     private Philosopher() {
         this.hasLeftChopstick = false;
         this.hasRightChopstick = false;
         this.hungry = new Random().nextBoolean();
-        this.awake = false;
+        this.running = false;
     }
 
-    public synchronized boolean isAwake() {
-        return this.awake;
-    }
-
-    public void setStarvationTime(long starvationTime) {
-        this.starvationTime = starvationTime;
+    public synchronized boolean isRunning() {
+        return this.running;
     }
 
     public synchronized boolean isEating() {
@@ -48,6 +55,9 @@ public class Philosopher implements Runnable {
     }
 
     public synchronized void wakeUp() {
+        if(this.running)
+            return;
+
         this.timeLastAte = System.currentTimeMillis();
         if (this.hungry) {
             this.startedChopstickAttempt = System.currentTimeMillis();
@@ -55,14 +65,13 @@ public class Philosopher implements Runnable {
             this.startedThinking = System.currentTimeMillis();
         }
 
-        new Thread(this).start();
-        this.awake = true;
+        new Thread(this::run).start();
+        this.running = true;
         System.out.println("Started philosopher");
     }
 
 
-    @Override
-    public void run() {
+    private void run() {
         System.out.println("I know who is on my left and right..");
         System.out.println("On my left is " + Communicator.INSTANCE.leftSocket);
         System.out.println("On my right is " + Communicator.INSTANCE.rightSocket);
@@ -73,18 +82,20 @@ public class Philosopher implements Runnable {
             debugPrint(currentTime);
 
             if(isPassedOut) {
-                if(Math.random() * 1000.0 < 1) {
+                if(Math.random() < 0.0001) {
                     isPassedOut = false;
-                    // Reconnection stuff
 
-
-
+                    Server.createServer(Settings.serverPort);
+                    ConnectionAttempter.attemptConnection(true,Settings.leftNode);
+                    ConnectionAttempter.attemptConnection(false,Settings.rightNode);
 
                     long delta = currentTime - passedOutAt;
 
                     timeLastAte += delta;
                     startedEating += delta;
                     startedThinking += delta;
+
+                    System.out.println("Woke up");
                 }
             } else {
                 dinningPhilosopher(currentTime);
@@ -92,7 +103,7 @@ public class Philosopher implements Runnable {
             }
 
             try {
-                Thread.sleep(Math.round(Math.ceil(starvationTime / 4000.0)));
+                Thread.sleep(Math.round(Math.ceil(Settings.starvationTime / 4000.0)));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -101,8 +112,37 @@ public class Philosopher implements Runnable {
     }
 
     private void drinkingPhilosopher(long currentTime) {
-        if(hasCup && startedDrinking + starvationTime < currentTime) {
+        if(hasCup && startedDrinking + Settings.starvationTime < currentTime) {
             passOut(currentTime);
+        }
+
+        if(!thirsty &&  Math.random() < 0.00001) {
+            thirsty = true;
+        } else if(thirsty) {
+            //random chance to put down cup
+            if (thirsty && hasCup && Math.random() < 0.0001) {
+                this.thirsty = false;
+                this.hasCup = false;
+                System.out.println("Stopped Drinking");
+            }
+            //start drinking
+            else if(!hasCup && drinkingRequests == Settings.numberPhilosopher) {
+                hasCup = true;
+                startedDrinking = currentTime;
+                requestingCup = false;
+                System.out.println("Started Drinking");
+            }
+            // timeout for cup request
+            else if(requestingCup && (sentCupRequest + 20 * Settings.numberPhilosopher) < currentTime) {
+                requestingCup = false;
+                drinkingRequests = 0;
+            }
+            // request cup if after request cooldown
+            else if (!requestingCup && sentCupRequest + Settings.starvationTime/20 + 20 * Settings.numberPhilosopher < currentTime && Math.random() < 0.0001) {
+                requestingCup = true;
+                sentCupRequest = currentTime;
+                Communicator.INSTANCE.leftSocket.requestCup();
+            }
         }
     }
 
@@ -113,15 +153,18 @@ public class Philosopher implements Runnable {
             hasCup = false;
             isPassedOut = true;
             passedOutAt = currentTime;
-            Communicator.INSTANCE.close();
+            thirsty = false;
+            Communicator.close();
+            Server.close();
         }
+        System.err.println("ZZZZZZ");
     }
 
     private void dinningPhilosopher(long currentTime) {
         // If eating, reset timestamp
         if (isEating()) this.timeLastAte = currentTime;
 
-        if (this.timeLastAte + starvationTime < currentTime) {
+        if (this.timeLastAte + Settings.starvationTime < currentTime) {
             System.err.println("I starved");
             System.exit(1);
         }
@@ -157,21 +200,21 @@ public class Philosopher implements Runnable {
         }
         try {
             System.err.println("Sleeping for a bit");
-            Thread.sleep(Math.round(Math.random() * starvationTime / 40.0));
+            Thread.sleep(Math.round(Math.random() * Settings.starvationTime / 40.0));
             startedChopstickAttempt = System.currentTimeMillis();
         } catch (InterruptedException e) { }
     }
 
     private synchronized boolean shouldWaitABit(long currentTime) {
-        return this.hungry && !this.isEating() && startedChopstickAttempt + starvationTime / 40 < currentTime;
+        return this.hungry && !this.isEating() && startedChopstickAttempt + Settings.starvationTime / 40 < currentTime;
     }
 
     private synchronized boolean shouldStopThinking(long currentTime) {
-        return !this.hungry && (starvationTime / 4 + startedThinking < currentTime || Math.random() > 0.99);
+        return !this.hungry && (Settings.starvationTime / 4 + startedThinking < currentTime || Math.random() > 0.99);
     }
 
     private synchronized boolean shouldStopEating(long currentTime) {
-        return isEating() && (starvationTime / 40 + startedEating < currentTime || Math.random() > 0.9);
+        return isEating() && (Settings.starvationTime / 40 + startedEating < currentTime || Math.random() > 0.9);
     }
 
     public synchronized boolean requestChopstick(boolean isLeft) {
@@ -219,4 +262,16 @@ public class Philosopher implements Runnable {
     }
 
 
+    public boolean willAbsorbRequest() {
+        if(hasCup) {
+            return  true;
+        }
+
+        if(thirsty && requestingCup) {
+            drinkingRequests++;
+            return true;
+        }
+
+        return false;
+    }
 }

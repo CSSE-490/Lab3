@@ -1,3 +1,11 @@
+package main;
+
+import logic.*;
+import network.ClientResponder;
+import network.Communicator;
+import network.Node;
+import network.Server;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,13 +20,16 @@ public class FastStart {
         Node left = getNode(args[1]);
         Node right = getNode(args[2]);
         long sleepTime = Long.parseLong(args[3]);
-        int tickRAte = Integer.parseInt(args[4]);
+        int starvationTime = Integer.parseInt(args[4]);
+        int numberofPhilosophers = Integer.parseInt(args[5]);
 
-        Philosopher.INSTANCE.setStarvationTime(tickRAte);
+        Settings.leftNode  = left;
+        Settings.rightNode = right;
+        Settings.numberPhilosopher = numberofPhilosophers;
+        Settings.serverPort = port;
+        Settings.starvationTime = starvationTime;
 
-        Runnable r2 = new Server(port);
-        Thread t2 = new Thread(r2);
-        t2.start();
+        Server.createServer(port);
 
         Thread.sleep(sleepTime);
 
