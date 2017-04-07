@@ -1,5 +1,6 @@
 package main;
 
+import javafx.scene.control.PasswordField;
 import logic.*;
 import network.ClientResponder;
 import network.Communicator;
@@ -109,18 +110,31 @@ public class Main {
                 case "thinking":
                     Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
                     break;
+                case "thirsty":
+                    Philosopher.INSTANCE.setThirsty(System.currentTimeMillis(), true);
+                    break;
                 case "gui":
-                    JFrame frame = new JFrame("logic.Philosopher");
+                    JFrame frame = new JFrame("Philosopher");
                     JPanel panel = new JPanel();
-                    JButton button = new JButton("logic.Philosopher is hungry: " + Philosopher.INSTANCE.isHungry());
-                    button.addActionListener((ae) -> {
+                    JButton hungryButton = new JButton("Philosopher is hungry: " + Philosopher.INSTANCE.isHungry());
+                    hungryButton.addActionListener((ae) -> {
                         if(Philosopher.INSTANCE.isHungry()) {
                             Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
                         } else {
                             Philosopher.INSTANCE.nowHungry(System.currentTimeMillis());
                         }
                     });
-                    panel.add(button);
+                    JButton thirstyButton = new JButton(("Philosopher is thirsty: "));
+                    thirstyButton.addActionListener(ae -> {
+                        if(Philosopher.INSTANCE.isThirsty()) {
+                            Philosopher.INSTANCE.setThirsty(System.currentTimeMillis(), false);
+                        } else {
+                            Philosopher.INSTANCE.setThirsty(System.currentTimeMillis(), true);
+                        }
+                    });
+
+                    panel.add(hungryButton);
+                    panel.add(thirstyButton);
                     frame.add(panel);
                     frame.pack();
                     frame.addWindowListener(new WindowListener() {
@@ -132,13 +146,9 @@ public class Main {
                                 while(true) {
                                     if(shouldStop)
                                         return;
-                                    try {
-                                        EventQueue.invokeAndWait(() -> button.setText("logic.Philosopher is hungry: " + Philosopher.INSTANCE.isHungry()));
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    } catch (InvocationTargetException e) {
-                                        e.printStackTrace();
-                                    }
+
+                                    EventQueue.invokeLater(() -> hungryButton.setText("Philosopher is hungry: " + Philosopher.INSTANCE.isHungry()));
+                                    EventQueue.invokeLater(() -> thirstyButton.setText("Philosopher is thirsty: " + Philosopher.INSTANCE.isThirsty()));
                                     try {
                                         Thread.sleep(100);
                                     } catch (InterruptedException e) {

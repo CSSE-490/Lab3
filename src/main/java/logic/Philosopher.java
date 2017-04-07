@@ -121,9 +121,7 @@ public class Philosopher {
         } else if(thirsty) {
             //random chance to put down cup
             if (thirsty && hasCup && Math.random() < 0.0001) {
-                this.thirsty = false;
-                this.hasCup = false;
-                System.out.println("Stopped Drinking");
+                notThirsty();
             }
             //start drinking
             else if(!hasCup && drinkingRequests == Settings.numberPhilosopher) {
@@ -143,7 +141,17 @@ public class Philosopher {
                 sentCupRequest = currentTime;
                 Communicator.INSTANCE.leftSocket.requestCup();
             }
+
+            if(hasCup) {
+                System.out.println("GULP");
+            }
         }
+    }
+
+    private void notThirsty() {
+        this.thirsty = false;
+        this.hasCup = false;
+        System.out.println("No Longer Thirsty Drinking");
     }
 
     private void passOut(long currentTime) {
@@ -162,7 +170,10 @@ public class Philosopher {
 
     private void dinningPhilosopher(long currentTime) {
         // If eating, reset timestamp
-        if (isEating()) this.timeLastAte = currentTime;
+        if (isEating()) {
+            this.timeLastAte = currentTime;
+            System.out.println("OM NOM NOM");
+        }
 
         if (this.timeLastAte + Settings.starvationTime < currentTime) {
             System.err.println("I starved");
@@ -273,5 +284,17 @@ public class Philosopher {
         }
 
         return false;
+    }
+
+    public synchronized void setThirsty(long currentTime, boolean thirsty) {
+        if(thirsty) {
+            this.thirsty = true;
+        } else {
+            notThirsty();
+        }
+    }
+
+    public boolean isThirsty() {
+        return thirsty;
     }
 }
