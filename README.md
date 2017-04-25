@@ -1,4 +1,4 @@
-# Drinking Philosopher Problem
+# Playing Philosopher Problem
 ## Authors:
 CJ Miller and Jesse Shellabarger
 ## How to Use
@@ -15,6 +15,7 @@ CJ Miller and Jesse Shellabarger
 * `gui` : Opens a JFrame that allows manual switching of the local Philosopher
 * `hungry` : Forces the local Philosopher into the hungry state
 * `thinking` : Forces the local Philosopher into the thinking state
+* 'thirsty' : Forces the local Philosopher into the thirsty state
 
 ## Incentive
 * GUI (via the `gui` command)
