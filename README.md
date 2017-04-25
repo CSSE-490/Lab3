@@ -7,7 +7,7 @@ CJ Miller and Jesse Shellabarger
     
     `main.FastStart <Local Port> <Left Host> <Right Host> <Wait Time Before Connecting> <Starvation Time>`
 * Manual Start
-    * Follow the Prompts in the command line
+    * Follow the Prompts in the command line.
     Push enter again after putting in port to start the client connection processes
     
 ### REPL Commands
@@ -15,7 +15,7 @@ CJ Miller and Jesse Shellabarger
 * `gui` : Opens a JFrame that allows manual switching of the local Philosopher
 * `hungry` : Forces the local Philosopher into the hungry state
 * `thinking` : Forces the local Philosopher into the thinking state
-* 'thirsty' : Forces the local Philosopher into the thirsty state
+* `thirsty` : Forces the local Philosopher into the thirsty state
 
 ## Incentive
 * GUI (via the `gui` command)
