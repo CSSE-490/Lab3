@@ -1,7 +1,6 @@
 package main;
 
 import logic.Philosopher;
-import network.Communicator;
 import network.zookeeper.Handler;
 import org.apache.zookeeper.KeeperException;
 

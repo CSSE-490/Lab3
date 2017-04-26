@@ -2,16 +2,10 @@ package logic;
 
 
 import main.Settings;
-import network.Communicator;
-import network.ConnectionAttempter;
-import network.Server;
 import network.zookeeper.Handler;
 
 import java.util.Random;
 
-/**
- * Created by CJ on 3/24/2017.
- */
 public class Philosopher {
 
     public static Philosopher INSTANCE;
@@ -35,10 +29,6 @@ public class Philosopher {
     private long startedDrinking;
     private boolean running;
     private boolean isPassedOut;
-
-    private int drinkingRequests;
-    private long sentCupRequest;
-    private boolean requestingCup;
 
     private Philosopher() {
         this.hasLeftChopstick = false;
@@ -73,10 +63,6 @@ public class Philosopher {
 
 
     private void run() {
-        System.out.println("I know who is on my left and right..");
-        System.out.println("On my left is " + Communicator.INSTANCE.leftSocket);
-        System.out.println("On my right is " + Communicator.INSTANCE.rightSocket);
-
         while (true) {
             long currentTime = System.currentTimeMillis();
 
@@ -85,10 +71,6 @@ public class Philosopher {
             if(isPassedOut) {
                 if(Math.random() < 0.0001) {
                     isPassedOut = false;
-
-                    Server.createServer(Settings.serverPort);
-                    ConnectionAttempter.attemptConnection(true,Settings.leftNode);
-                    ConnectionAttempter.attemptConnection(false,Settings.rightNode);
 
                     long delta = currentTime - passedOutAt;
 
@@ -109,7 +91,6 @@ public class Philosopher {
                 e.printStackTrace();
             }
         }
-
     }
 
     private void drinkingPhilosopher(long currentTime) {
@@ -125,25 +106,9 @@ public class Philosopher {
                 notThirsty();
             }
             //start drinking
-            else if(!hasCup && drinkingRequests == Settings.numberPhilosopher) {
-                hasCup = true;
-                startedDrinking = currentTime;
-                requestingCup = false;
-                System.out.println("Started Drinking");
-            }
-            // timeout for cup request
-            else if(requestingCup && (sentCupRequest + 20 * Settings.numberPhilosopher) < currentTime) {
-                requestingCup = false;
-                drinkingRequests = 0;
-            }
-            // request cup if after request cooldown
-            else if (!requestingCup && sentCupRequest + Settings.starvationTime/20 + 20 * Settings.numberPhilosopher < currentTime && Math.random() < 0.0001) {
-                requestingCup = true;
-                sentCupRequest = currentTime;
+            else if(!hasCup) {
                 Handler.I.requestCup();
-            }
-
-            if(hasCup) {
+            }else if(hasCup) {
                 System.out.println("GULP");
             }
         }
@@ -151,22 +116,25 @@ public class Philosopher {
 
     private void notThirsty() {
         this.thirsty = false;
+        if(hasCup) Handler.I.clearCup();
         this.hasCup = false;
         System.out.println("No Longer Thirsty Drinking");
     }
 
     private void passOut(long currentTime) {
         synchronized (this) {
+            if(hasCup) Handler.I.clearCup();
+            if(hasLeftChopstick) Handler.I.clearLeftChopStick();
+            if(hasRightChopstick) Handler.I.clearRightChopStick();
+
             hasLeftChopstick = false;
             hasRightChopstick = false;
             hasCup = false;
             isPassedOut = true;
             passedOutAt = currentTime;
             thirsty = false;
-            Communicator.close();
-            Server.close();
         }
-        System.err.println("ZZZZZZ");
+        System.err.println("ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ");
     }
 
     private void dinningPhilosopher(long currentTime) {
@@ -192,8 +160,8 @@ public class Philosopher {
         // If hungry but not eating, try to take chopsticks
         if (!isEating() && this.hungry) {
             synchronized (this) {
-                if (!hasLeftChopstick) Communicator.INSTANCE.leftSocket.requestChopstick();
-                if (!hasRightChopstick) Communicator.INSTANCE.rightSocket.requestChopstick();
+                if (!hasLeftChopstick) Handler.I.requestLeftChopStick();
+                if (!hasRightChopstick) Handler.I.requestRightChopStick();
             }
         }
     }
@@ -207,6 +175,8 @@ public class Philosopher {
 
     private void waitABit() {
         synchronized (this) {
+            if(hasLeftChopstick) Handler.I.clearLeftChopStick();
+            if(hasRightChopstick) Handler.I.clearRightChopStick();
             hasLeftChopstick = false;
             hasRightChopstick = false;
         }
@@ -234,26 +204,6 @@ public class Philosopher {
         else return !this.hasRightChopstick;
     }
 
-    public synchronized void takeChopstick(boolean isLeft) {
-        if (!this.hungry)
-            return;
-
-        if (isLeft) this.hasLeftChopstick = true;
-        else this.hasRightChopstick = true;
-
-        if (isEating()) {
-            startedEating = System.currentTimeMillis();
-        }
-    }
-
-    public synchronized void dropChopstick(boolean isLeft) {
-        if (isLeft) {
-            this.hasLeftChopstick = false;
-        } else {
-            this.hasRightChopstick = false;
-        }
-    }
-
     public synchronized void nowHungry(long currentTime) {
         this.hungry = true;
         this.startedChopstickAttempt = currentTime;
@@ -261,30 +211,20 @@ public class Philosopher {
     }
 
     public synchronized void nowThinking(long currentTime) {
+        if(hasLeftChopstick)
+            Handler.I.clearLeftChopStick();
+        if(hasRightChopstick)
+            Handler.I.clearRightChopStick();
+
         this.hasLeftChopstick = false;
         this.hasRightChopstick = false;
         this.hungry = false;
         this.startedThinking = currentTime;
         System.out.println("Finished eating, thinking now.");
-
     }
 
     public boolean isHungry() {
         return hungry;
-    }
-
-
-    public boolean willAbsorbRequest() {
-        if(hasCup) {
-            return  true;
-        }
-
-        if(thirsty && requestingCup) {
-            drinkingRequests++;
-            return true;
-        }
-
-        return false;
     }
 
     public synchronized void setThirsty(long currentTime, boolean thirsty) {
@@ -301,5 +241,13 @@ public class Philosopher {
 
     public void takeCup() {
         this.hasCup = true;
+    }
+
+    public void takeChopstick(boolean isLeft) {
+        if(isLeft)
+            hasLeftChopstick = true;
+        else {
+            hasRightChopstick = true;
+        }
     }
 }
