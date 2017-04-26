@@ -93,67 +93,91 @@ public enum Handler implements Watcher {
         keeper.setData(tableControl, "START".getBytes(), -1);
     }
 
-    public void requestLeftChopStick() throws KeeperException, InterruptedException {
-        Stat stat = keeper.exists(leftChopStick,false);
+    public void requestLeftChopStick() throws InterruptedException {
+        try {
+            Stat stat = keeper.exists(leftChopStick, false);
 
-        byte[] data = keeper.getData(leftChopStick, false, stat);
+            byte[] data = keeper.getData(leftChopStick, false, stat);
 
-        if(data.length == 0) {
-            try {
-                keeper.setData(leftChopStick,Integer.toString(whoAmI).getBytes(), stat.getVersion());
-                Philosopher.INSTANCE.takeChopstick(true);
-            } catch (KeeperException.BadVersionException e) { }
+            if (data.length == 0) {
+                try {
+                    keeper.setData(leftChopStick, Integer.toString(whoAmI).getBytes(), stat.getVersion());
+                    Philosopher.INSTANCE.takeChopstick(true);
+                } catch (KeeperException.BadVersionException e) {
+                }
+            }
+        } catch (KeeperException e) {
+            System.err.println("Missing node " + leftChopStick + "! Exiting.");
+            System.exit(1);
         }
     }
 
-    public void requestRightChopStick() throws KeeperException, InterruptedException {
-        Stat stat = keeper.exists(rightChopStick,false);
+    public void requestRightChopStick() throws InterruptedException {
+        try {
+            Stat stat = keeper.exists(rightChopStick, false);
 
-        byte[] data = keeper.getData(rightChopStick, false, stat);
+            byte[] data = keeper.getData(rightChopStick, false, stat);
 
-        if(data.length == 0) {
-            try {
-                keeper.setData(rightChopStick,Integer.toString(whoAmI).getBytes(), stat.getVersion());
-                Philosopher.INSTANCE.takeChopstick(false);
-            } catch (KeeperException.BadVersionException e) { }
+            if (data.length == 0) {
+                try {
+                    keeper.setData(rightChopStick, Integer.toString(whoAmI).getBytes(), stat.getVersion());
+                    Philosopher.INSTANCE.takeChopstick(false);
+                } catch (KeeperException.BadVersionException e) {
+                }
+            }
+        } catch (KeeperException e) {
+            System.err.println("Missing node " + this.rightChopStick + "! Exiting.");
+            System.exit(1);
         }
     }
 
-    public void requestCup() throws KeeperException, InterruptedException {
-        Stat stat = keeper.exists(tableCup,false);
+    public void requestCup() throws InterruptedException {
+        try {
+            Stat stat = keeper.exists(tableCup, false);
 
-        byte[] data = keeper.getData(tableCup, false, stat);
+            byte[] data = keeper.getData(tableCup, false, stat);
 
-        if(data.length == 0) {
-            try {
-                keeper.setData(tableCup,Integer.toString(whoAmI).getBytes(), stat.getVersion());
-                Philosopher.INSTANCE.takeCup();
-            } catch (KeeperException.BadVersionException e) { }
+            if (data.length == 0) {
+                try {
+                    keeper.setData(tableCup, Integer.toString(whoAmI).getBytes(), stat.getVersion());
+                    Philosopher.INSTANCE.takeCup();
+                } catch (KeeperException.BadVersionException e) {
+                }
+            }
+        } catch (KeeperException e) {
+            System.err.println("Missing node " + this.tableCup + "! Exiting.");
+            System.exit(1);
         }
     }
 
-    private void clearNode(String channel) throws KeeperException, InterruptedException {
-        Stat stat = keeper.exists(channel,false);
+    private void clearNode(String channel) throws InterruptedException {
+        try {
+            Stat stat = keeper.exists(channel, false);
 
-        byte[] data = keeper.getData(channel, false, stat);
+            byte[] data = keeper.getData(channel, false, stat);
 
-        if(data.length == 0) {
-            try {
-                keeper.setData(channel,Integer.toString(whoAmI).getBytes(), stat.getVersion());
-                Philosopher.INSTANCE.takeCup();
-            } catch (KeeperException.BadVersionException e) { }
+            if (data.length == 0) {
+                try {
+                    keeper.setData(channel, Integer.toString(whoAmI).getBytes(), stat.getVersion());
+                    Philosopher.INSTANCE.takeCup();
+                } catch (KeeperException.BadVersionException e) {
+                }
+            }
+        } catch (KeeperException e) {
+            System.err.println("Missing node " + channel + "! Exiting.");
+            System.exit(1);
         }
     }
 
-    public void clearRightChopStick() throws KeeperException, InterruptedException {
+    public void clearRightChopStick() throws InterruptedException {
         clearNode(rightChopStick);
     }
 
-    public void clearLeftChopStick() throws KeeperException, InterruptedException {
+    public void clearLeftChopStick() throws InterruptedException {
         clearNode(leftChopStick);
     }
 
-    public void clearCup() throws KeeperException, InterruptedException {
+    public void clearCup() throws InterruptedException {
         clearNode(tableCup);
     }
 
