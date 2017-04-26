@@ -153,16 +153,13 @@ public class Philosopher {
             nowThinking(currentTime);
         } else if (shouldStopThinking(currentTime)) { // Don't think for more than 1 second
             this.nowHungry(currentTime);
-        } else if (shouldWaitABit(currentTime)) {
-            waitABit();
         }
 
         // If hungry but not eating, try to take chopsticks
         if (!isEating() && this.hungry) {
-            synchronized (this) {
-                if (!hasLeftChopstick) Handler.I.requestLeftChopStick();
-                if (!hasRightChopstick) Handler.I.requestRightChopStick();
-            }
+//            System.out.println("Requesting Chopsticks");
+            if (!hasLeftChopstick) Handler.I.requestLeftChopStick();
+            if (!hasRightChopstick) Handler.I.requestRightChopStick();
         }
     }
 
@@ -173,35 +170,12 @@ public class Philosopher {
 //        System.out.format("Table state, Left: %b  Right: %b\n", this.hasLeftChopstick, this.hasRightChopstick);
     }
 
-    private void waitABit() {
-        synchronized (this) {
-            if(hasLeftChopstick) Handler.I.clearLeftChopStick();
-            if(hasRightChopstick) Handler.I.clearRightChopStick();
-            hasLeftChopstick = false;
-            hasRightChopstick = false;
-        }
-        try {
-            System.err.println("Sleeping for a bit");
-            Thread.sleep(Math.round(Math.random() * Settings.starvationTime / 40.0));
-            startedChopstickAttempt = System.currentTimeMillis();
-        } catch (InterruptedException e) { }
-    }
-
-    private synchronized boolean shouldWaitABit(long currentTime) {
-        return this.hungry && !this.isEating() && startedChopstickAttempt + Settings.starvationTime / 40 < currentTime;
-    }
-
     private synchronized boolean shouldStopThinking(long currentTime) {
         return !this.hungry && (Settings.starvationTime / 4 + startedThinking < currentTime || Math.random() > 0.99);
     }
 
     private synchronized boolean shouldStopEating(long currentTime) {
         return isEating() && (Settings.starvationTime / 40 + startedEating < currentTime || Math.random() > 0.9);
-    }
-
-    public synchronized boolean requestChopstick(boolean isLeft) {
-        if (isLeft) return !this.hasLeftChopstick;
-        else return !this.hasRightChopstick;
     }
 
     public synchronized void nowHungry(long currentTime) {
@@ -243,7 +217,7 @@ public class Philosopher {
         this.hasCup = true;
     }
 
-    public void takeChopstick(boolean isLeft) {
+    public synchronized void takeChopstick(boolean isLeft) {
         if(isLeft)
             hasLeftChopstick = true;
         else {

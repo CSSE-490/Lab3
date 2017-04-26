@@ -19,47 +19,67 @@ public enum Handler implements Watcher {
     private String leftGame;
     private String rightGame;
 
-    public static void main(String[] args) throws InterruptedException, IOException, KeeperException {
-        I.init("localhost");
-    }
-
     private ZooKeeper keeper;
 
     public void init(String connectionString) throws IOException, KeeperException, InterruptedException {
-        keeper = new ZooKeeper(connectionString, 3000, this);
+        keeper = new ZooKeeper(connectionString, 800000, this);
 
+        Thread.sleep(1000);
 
         // left ChopStick
         int leftNode = mod(whoAmI - 1, numberPhilosopher);
         leftChopStick = String.format("/Chop%d%d", leftNode, whoAmI);
-        if (keeper.exists(leftChopStick, null) == null)
+        if (keeper.exists(leftChopStick, null) == null) {
+            System.out.println("Creating " + leftChopStick);
             keeper.create(leftChopStick, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } else {
+            keeper.setData(leftChopStick, new byte[0], -1);
+        }
 
         // Right ChopStick
         rightChopStick = String.format("/Chop%d%d", whoAmI, mod(whoAmI + 1, numberPhilosopher));
-        if (keeper.exists(rightChopStick, null) == null)
+        if (keeper.exists(rightChopStick, null) == null) {
+            System.out.println("Creating " + rightChopStick);
             keeper.create(rightChopStick, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } else {
+            keeper.setData(rightChopStick, new byte[0], -1);
+        }
 
         // Cup (Table)
         tableCup = "/Table";
-        if (keeper.exists(tableCup, null) == null)
+        if (keeper.exists(tableCup, null) == null) {
+            System.out.println("Creating " + tableCup);
             keeper.create(tableCup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } else {
+            keeper.setData(tableCup, new byte[0], -1);
+        }
 
         // Control (Table)
         tableControl = "/Control";
-        if (keeper.exists(tableControl, this) == null)
+        if (keeper.exists(tableControl, this) == null) {
+            System.out.println("Creating " + tableControl);
             keeper.create(tableControl, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } else {
+            keeper.setData(tableControl, new byte[0], -1);
+        }
 
         // Left Game
         leftGame = String.format("/Game%d%d", mod(whoAmI - 1, numberPhilosopher), whoAmI);
-        if (keeper.exists(leftGame, null) == null)
+        if (keeper.exists(leftGame, null) == null) {
+            System.out.println("Creating " + leftGame);
             keeper.create(leftGame, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } else {
+            keeper.setData(leftGame, new byte[0], -1);
+        }
 
         // Right Game
         rightGame = String.format("/Game%d%d", whoAmI, mod(whoAmI + 1, numberPhilosopher));
-        if (keeper.exists(rightGame, null) == null)
+        if (keeper.exists(rightGame, null) == null) {
+            System.out.println("Creating " + rightGame);
             keeper.create(rightGame, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-
+        }else {
+            keeper.setData(rightGame, new byte[0], -1);
+        }
     }
 
     @Override
@@ -94,18 +114,24 @@ public enum Handler implements Watcher {
     }
 
     public void requestLeftChopStick() {
-        requestResource(leftChopStick);
+        if(requestResource(leftChopStick)) {
+            Philosopher.INSTANCE.takeChopstick(true);
+        }
     }
 
     public void requestRightChopStick() {
-        requestResource(rightChopStick);
+        if(requestResource(rightChopStick)) {
+            Philosopher.INSTANCE.takeChopstick(false);
+        }
     }
 
     public void requestCup() {
-        requestResource(tableCup);
+        if(requestResource(tableCup)) {
+            Philosopher.INSTANCE.takeCup();
+        }
     }
 
-    private void requestResource(String channel) {
+    private boolean requestResource(String channel) {
         try {
             Stat stat = keeper.exists(channel, false);
 
@@ -114,7 +140,7 @@ public enum Handler implements Watcher {
             if (data.length == 0) {
                 try {
                     keeper.setData(channel, Integer.toString(whoAmI).getBytes(), stat.getVersion());
-                    Philosopher.INSTANCE.takeCup();
+                    return true;
                 } catch (KeeperException.BadVersionException e) {
                 }
             }
@@ -122,21 +148,18 @@ public enum Handler implements Watcher {
             System.err.println("Missing node " + channel + "! Exiting.");
             System.exit(1);
         }
+        return false;
     }
 
     private void clearNode(String channel) {
+     //   System.out.println("Attempting to clear node of: " + channel);
         try {
             Stat stat = keeper.exists(channel, false);
 
-            byte[] data = keeper.getData(channel, false, stat);
-
-            if (data.length == 0) {
-                try {
-                    keeper.setData(channel, new byte[0], stat.getVersion());
-                    Philosopher.INSTANCE.takeCup();
-                } catch (KeeperException.BadVersionException e) {
-                }
-            }
+            try {
+                keeper.setData(channel, new byte[0], stat.getVersion());
+//                System.out.println("Cleared value for: " +channel);
+            } catch (KeeperException.BadVersionException e) { }
         } catch (KeeperException | InterruptedException e) {
             System.err.println("Missing node " + channel + "! Exiting.");
             System.exit(1);
