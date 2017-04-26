@@ -5,6 +5,7 @@ import main.Settings;
 import network.Communicator;
 import network.ConnectionAttempter;
 import network.Server;
+import network.zookeeper.Handler;
 
 import java.util.Random;
 
@@ -139,7 +140,7 @@ public class Philosopher {
             else if (!requestingCup && sentCupRequest + Settings.starvationTime/20 + 20 * Settings.numberPhilosopher < currentTime && Math.random() < 0.0001) {
                 requestingCup = true;
                 sentCupRequest = currentTime;
-                Communicator.INSTANCE.leftSocket.requestCup();
+                Handler.I.requestCup();
             }
 
             if(hasCup) {
@@ -296,5 +297,9 @@ public class Philosopher {
 
     public boolean isThirsty() {
         return thirsty;
+    }
+
+    public void takeCup() {
+        this.hasCup = true;
     }
 }
