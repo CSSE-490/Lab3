@@ -146,6 +146,7 @@ public enum Handler implements Watcher {
             }
         } catch (KeeperException | InterruptedException e) {
             System.err.println("Missing node " + channel + "! Exiting.");
+            e.printStackTrace();
             System.exit(1);
         }
         return false;
@@ -162,6 +163,7 @@ public enum Handler implements Watcher {
             } catch (KeeperException.BadVersionException e) { }
         } catch (KeeperException | InterruptedException e) {
             System.err.println("Missing node " + channel + "! Exiting.");
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -178,4 +180,75 @@ public enum Handler implements Watcher {
         clearNode(tableCup);
     }
 
+
+    public boolean requestPlayOnLeft() {
+        return requestPlaying(leftGame, rightGame);
+    }
+
+    public boolean requestPlayOnRight() {
+        return requestPlaying(rightGame, leftGame);
+    }
+
+    private boolean requestPlaying(String connection, String otherConnection) {
+        try {
+            Stat stat = keeper.exists(connection, false);
+
+            byte[] data = keeper.getData(connection, false, stat);
+
+            if(data.length == 0) {
+                keeper.setData(connection, Integer.toString(whoAmI).getBytes(), stat.getVersion());
+                return false;
+            }
+
+            String message = new String(data);
+
+            if(message.equals(Integer.toString(whoAmI)))
+                return false;
+
+            // System.err.println(message);
+            if(message.equals(Integer.toString(mod(whoAmI + 1, numberPhilosopher))) ||
+                    message.equals(Integer.toString(mod(whoAmI - 1, numberPhilosopher)))) {
+                keeper.setData(connection, "playing".getBytes(), stat.getVersion());
+                stopPlaying(otherConnection);
+                return true;
+            } else if(message.equals("playing")) {
+                return true;
+            } else if (message.equals("done")) {
+                keeper.setData(connection, new byte[0], -1);
+                Philosopher.INSTANCE.stopPlaying();
+                return false;
+            }
+
+            System.err.format("Invalid Message in Game ZNode (%s): %s%n", connection,message);
+            System.exit(1);
+        } catch (KeeperException | InterruptedException e) {
+            System.err.println("Missing node " + connection + "! Exiting.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+        return false;
+    }
+
+
+    public void stopPlayingOnLeft() {
+        stopPlaying(leftGame);
+    }
+
+    public void stopPlayingOnRight() {
+        stopPlaying(rightGame);
+    }
+
+    private void stopPlaying(String channel) {
+       // System.err.println("Stop playing on: " + channel);
+        try {
+            Stat stat = keeper.exists(channel, false);
+            try {
+                keeper.setData(channel, "done".getBytes(), stat.getVersion());
+            } catch (KeeperException.BadVersionException e) { }
+        } catch (KeeperException | InterruptedException e) {
+            System.err.println("Missing node " + channel + "! Exiting.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
 }

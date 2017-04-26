@@ -40,7 +40,6 @@ public class ZooStart {
                 case "hungry":
                     Philosopher.INSTANCE.nowHungry(System.currentTimeMillis());
                     break;
-
                 case "thinking":
                     Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
                     break;

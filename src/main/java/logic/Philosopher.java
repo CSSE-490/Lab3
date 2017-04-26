@@ -24,11 +24,15 @@ public class Philosopher {
     private long timeLastAte;
     private long startedEating = 0L;
     private long startedThinking = 0L;
-    private long startedChopstickAttempt = 0L;
     private long passedOutAt;
-    private long startedDrinking;
     private boolean running;
     private boolean isPassedOut;
+    private long startedDrinking = 0L;
+
+    private boolean iWantToPlay;
+    private boolean playingOnLeft;
+    private boolean playing;
+    private long startedChopstickAttempt = 0L;
 
     private Philosopher() {
         this.hasLeftChopstick = false;
@@ -37,22 +41,19 @@ public class Philosopher {
         this.running = false;
     }
 
-    public synchronized boolean isRunning() {
-        return this.running;
-    }
-
     public synchronized boolean isEating() {
         return hasLeftChopstick && hasRightChopstick && hungry;
     }
 
     public synchronized void wakeUp() {
-        if(this.running)
+        if (this.running)
             return;
 
         this.timeLastAte = System.currentTimeMillis();
         if (this.hungry) {
             this.startedChopstickAttempt = System.currentTimeMillis();
-        } else {
+        }
+        else {
             this.startedThinking = System.currentTimeMillis();
         }
 
@@ -68,8 +69,8 @@ public class Philosopher {
 
             debugPrint(currentTime);
 
-            if(isPassedOut) {
-                if(Math.random() < 0.0001) {
+            if (isPassedOut) {
+                if (Math.random() < 0.0001) {
                     isPassedOut = false;
 
                     long delta = currentTime - passedOutAt;
@@ -80,6 +81,8 @@ public class Philosopher {
 
                     System.out.println("Woke up");
                 }
+            } else if (playingPhilosopher(currentTime)) {
+                System.out.println("Playing");
             } else {
                 dinningPhilosopher(currentTime);
                 drinkingPhilosopher(currentTime);
@@ -93,22 +96,63 @@ public class Philosopher {
         }
     }
 
+    private boolean playingPhilosopher(long currentTime) {
+        if (iWantToPlay) {
+            if(playing){
+                this.timeLastAte = currentTime;
+                if(playingOnLeft) {
+                    Handler.I.stopPlayingOnRight();
+                    if(!Handler.I.requestPlayOnLeft()) {
+                        playing = false;
+                        return false;
+                    }
+                } else {
+                    Handler.I.stopPlayingOnLeft();
+                    if(!Handler.I.requestPlayOnRight()) {
+                        playing = false;
+                        return false;
+                    }
+                }
+
+                if (Math.random() > 0.999) {
+                    if (playingOnLeft) Handler.I.stopPlayingOnLeft();
+                    else Handler.I.stopPlayingOnRight();
+                    return false;
+                }
+                return true;
+            } else {
+                if (Handler.I.requestPlayOnLeft()) {
+                    playingOnLeft = true;
+                } else if (Handler.I.requestPlayOnRight()) {
+                    playingOnLeft = false;
+                } else {
+                    return false;
+                }
+                startPlaying(currentTime);
+                return true;
+            }
+        } else {
+            iWantToPlay = Math.random() > .999;
+        }
+        return false;
+    }
+
     private void drinkingPhilosopher(long currentTime) {
-        if(hasCup && startedDrinking + Settings.starvationTime < currentTime) {
+        if (hasCup && startedDrinking + Settings.starvationTime < currentTime) {
             passOut(currentTime);
         }
 
-        if(!thirsty &&  Math.random() < 0.00001) {
+        if (!thirsty && Math.random() < 0.001) {
             thirsty = true;
-        } else if(thirsty) {
+        } else if (thirsty) {
             //random chance to put down cup
             if (thirsty && hasCup && Math.random() < 0.0001) {
                 notThirsty();
             }
             //start drinking
-            else if(!hasCup) {
+            else if (!hasCup) {
                 Handler.I.requestCup();
-            }else if(hasCup) {
+            } else if (hasCup) {
                 System.out.println("GULP");
             }
         }
@@ -116,16 +160,16 @@ public class Philosopher {
 
     private void notThirsty() {
         this.thirsty = false;
-        if(hasCup) Handler.I.clearCup();
+        if (hasCup) Handler.I.clearCup();
         this.hasCup = false;
         System.out.println("No Longer Thirsty Drinking");
     }
 
     private void passOut(long currentTime) {
         synchronized (this) {
-            if(hasCup) Handler.I.clearCup();
-            if(hasLeftChopstick) Handler.I.clearLeftChopStick();
-            if(hasRightChopstick) Handler.I.clearRightChopStick();
+            if (hasCup) Handler.I.clearCup();
+            if (hasLeftChopstick) Handler.I.clearLeftChopStick();
+            if (hasRightChopstick) Handler.I.clearRightChopStick();
 
             hasLeftChopstick = false;
             hasRightChopstick = false;
@@ -137,11 +181,26 @@ public class Philosopher {
         System.err.println("ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ ZZZZZZ");
     }
 
+    private synchronized void startPlaying(long currentTime) {
+        if (hasCup) Handler.I.clearCup();
+        if (hasLeftChopstick) Handler.I.clearLeftChopStick();
+        if (hasRightChopstick) Handler.I.clearRightChopStick();
+
+        hasLeftChopstick = false;
+        hasRightChopstick = false;
+        hasCup = false;
+        thirsty = false;
+        playing = true;
+        System.out.println("And let the games begin.");
+    }
+
     private void dinningPhilosopher(long currentTime) {
         // If eating, reset timestamp
         if (isEating()) {
             this.timeLastAte = currentTime;
             System.out.println("OM NOM NOM");
+        } else if (!hungry) {
+            System.out.println("Pondering");
         }
 
         if (this.timeLastAte + Settings.starvationTime < currentTime) {
@@ -153,17 +212,45 @@ public class Philosopher {
             nowThinking(currentTime);
         } else if (shouldStopThinking(currentTime)) { // Don't think for more than 1 second
             this.nowHungry(currentTime);
+        } else if (shouldWaitABit(currentTime)) {
+            waitABit();
         }
 
         // If hungry but not eating, try to take chopsticks
         if (!isEating() && this.hungry) {
-//            System.out.println("Requesting Chopsticks");
+            System.out.println("I NEED THINGS");
             if (!hasLeftChopstick) Handler.I.requestLeftChopStick();
             if (!hasRightChopstick) Handler.I.requestRightChopStick();
+
+
+
+//            if(!isEating()) {
+//                if(hasLeftChopstick) Handler.I.clearLeftChopStick();
+//                if(hasRightChopstick) Handler.I.clearRightChopStick();
+//            }
         }
     }
 
+    private void waitABit() {
+        synchronized (this) {
+            if(hasLeftChopstick) Handler.I.clearLeftChopStick();
+            if(hasRightChopstick) Handler.I.clearRightChopStick();
+            hasLeftChopstick = false;
+            hasRightChopstick = false;
+        }
+        try {
+            System.err.println("Sleeping for a bit");
+            Thread.sleep(Math.round(Math.random() * Settings.starvationTime / 40.0));
+            startedChopstickAttempt = System.currentTimeMillis();
+        } catch (InterruptedException e) { }
+    }
+
+    private synchronized boolean shouldWaitABit(long currentTime) {
+        return this.hungry && !this.isEating() && startedChopstickAttempt + Settings.starvationTime / 40 < currentTime;
+    }
+
     private void debugPrint(long currentTime) {
+//        System.out.println("Tick");
 //        System.out.format("Current Time: %d\n", currentTime);
 //        System.out.format("Is hungry: %b since %d\n", this.hungry, this.startedChopstickAttempt - currentTime);
 //        System.out.format("Last ate: %d    startedEating: %d\n", this.timeLastAte - currentTime, startedEating - currentTime);
@@ -171,7 +258,7 @@ public class Philosopher {
     }
 
     private synchronized boolean shouldStopThinking(long currentTime) {
-        return !this.hungry && (Settings.starvationTime / 4 + startedThinking < currentTime || Math.random() > 0.99);
+        return !this.hungry && (Settings.starvationTime / 4 + startedThinking < currentTime || Math.random() > 0.9);
     }
 
     private synchronized boolean shouldStopEating(long currentTime) {
@@ -180,14 +267,13 @@ public class Philosopher {
 
     public synchronized void nowHungry(long currentTime) {
         this.hungry = true;
-        this.startedChopstickAttempt = currentTime;
         System.out.println("Done thinking, now hungry");
     }
 
     public synchronized void nowThinking(long currentTime) {
-        if(hasLeftChopstick)
+        if (hasLeftChopstick)
             Handler.I.clearLeftChopStick();
-        if(hasRightChopstick)
+        if (hasRightChopstick)
             Handler.I.clearRightChopStick();
 
         this.hasLeftChopstick = false;
@@ -202,7 +288,7 @@ public class Philosopher {
     }
 
     public synchronized void setThirsty(long currentTime, boolean thirsty) {
-        if(thirsty) {
+        if (thirsty) {
             this.thirsty = true;
         } else {
             notThirsty();
@@ -213,15 +299,23 @@ public class Philosopher {
         return thirsty;
     }
 
-    public void takeCup() {
+    public synchronized void takeCup() {
         this.hasCup = true;
+        startedDrinking = System.currentTimeMillis();
     }
 
     public synchronized void takeChopstick(boolean isLeft) {
-        if(isLeft)
+        if (isLeft)
             hasLeftChopstick = true;
         else {
             hasRightChopstick = true;
         }
+
+        if (hasLeftChopstick && hasRightChopstick)
+            startedEating = System.currentTimeMillis();
+    }
+
+    public synchronized void stopPlaying() {
+        this.iWantToPlay = false;
     }
 }
