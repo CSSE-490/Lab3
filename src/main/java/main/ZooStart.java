@@ -49,7 +49,7 @@ public class ZooStart {
                 case "gui":
                     JFrame frame = new JFrame("Philosopher");
                     JPanel panel = new JPanel();
-                    JButton hungryButton = new JButton("Philosopher is hungry: " + Philosopher.INSTANCE.isHungry());
+                    JButton hungryButton = new JButton();
                     hungryButton.addActionListener((ae) -> {
                         if(Philosopher.INSTANCE.isHungry()) {
                             Philosopher.INSTANCE.nowThinking(System.currentTimeMillis());
@@ -57,7 +57,7 @@ public class ZooStart {
                             Philosopher.INSTANCE.nowHungry(System.currentTimeMillis());
                         }
                     });
-                    JButton thirstyButton = new JButton(("Philosopher is thirsty: "));
+                    JButton thirstyButton = new JButton();
                     thirstyButton.addActionListener(ae -> {
                         if(Philosopher.INSTANCE.isThirsty()) {
                             Philosopher.INSTANCE.setThirsty(System.currentTimeMillis(), false);
@@ -66,6 +66,33 @@ public class ZooStart {
                         }
                     });
 
+                    JButton playButton = new JButton();
+                    playButton.addActionListener(ae -> {
+                        if(Philosopher.INSTANCE.wantsToPlay()){
+                            Philosopher.INSTANCE.setWantsToPlay(false);
+                        } else {
+                            Philosopher.INSTANCE.setWantsToPlay(true);
+                        }
+                    });
+
+                    JButton manualMode = new JButton("Manual: " + Settings.manualMode);
+                    manualMode.addActionListener(ae -> {
+                        Settings.manualMode = !Settings.manualMode;
+                        manualMode.setText("Manual: " + Settings.manualMode);
+                    });
+
+                    JButton knockOut = new JButton();
+                    knockOut.addActionListener(ae -> {
+                        if(Philosopher.INSTANCE.isPassedOut()) {
+                            Philosopher.INSTANCE.wakeUp(System.currentTimeMillis());
+                        } else {
+                            Philosopher.INSTANCE.passOut(System.currentTimeMillis());
+                        }
+                    });
+
+                    panel.add(manualMode);
+                    panel.add(knockOut);
+                    panel.add(playButton);
                     panel.add(hungryButton);
                     panel.add(thirstyButton);
                     frame.add(panel);
@@ -80,8 +107,10 @@ public class ZooStart {
                                     if(shouldStop)
                                         return;
 
-                                    EventQueue.invokeLater(() -> hungryButton.setText("Philosopher is hungry: " + Philosopher.INSTANCE.isHungry()));
-                                    EventQueue.invokeLater(() -> thirstyButton.setText("Philosopher is thirsty: " + Philosopher.INSTANCE.isThirsty()));
+                                    EventQueue.invokeLater(() -> knockOut.setText("Is Awake: " + !Philosopher.INSTANCE.isPassedOut()));
+                                    EventQueue.invokeLater(() -> hungryButton.setText("Is hungry: " + Philosopher.INSTANCE.isHungry()));
+                                    EventQueue.invokeLater(() -> thirstyButton.setText("Is thirsty: " + Philosopher.INSTANCE.isThirsty()));
+                                    EventQueue.invokeLater(() -> playButton.setText("Wants To Play: " + Philosopher.INSTANCE.wantsToPlay()));
                                     try {
                                         Thread.sleep(100);
                                     } catch (InterruptedException e) {

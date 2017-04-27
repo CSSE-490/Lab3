@@ -6,6 +6,8 @@ import network.zookeeper.Handler;
 
 import java.util.Random;
 
+import static main.Settings.manualMode;
+
 public class Philosopher {
 
     public static Philosopher INSTANCE;
@@ -45,7 +47,7 @@ public class Philosopher {
         return hasLeftChopstick && hasRightChopstick && hungry;
     }
 
-    public synchronized void wakeUp() {
+    public synchronized void startLogicLoop() {
         if (this.running)
             return;
 
@@ -70,16 +72,8 @@ public class Philosopher {
             debugPrint(currentTime);
 
             if (isPassedOut) {
-                if (Math.random() < 0.0001) {
-                    isPassedOut = false;
-
-                    long delta = currentTime - passedOutAt;
-
-                    timeLastAte += delta;
-                    startedEating += delta;
-                    startedThinking += delta;
-
-                    System.out.println("Woke up");
+                if (!manualMode && Math.random() < 0.0001) {
+                    wakeUp(currentTime);
                 }
             } else if (playingPhilosopher(currentTime)) {
                 System.out.println("Playing");
@@ -94,6 +88,18 @@ public class Philosopher {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void wakeUp(long currentTime) {
+        isPassedOut = false;
+
+        long delta = currentTime - passedOutAt;
+
+        timeLastAte += delta;
+        startedEating += delta;
+        startedThinking += delta;
+
+        System.out.println("Woke up");
     }
 
     private boolean playingPhilosopher(long currentTime) {
@@ -114,9 +120,8 @@ public class Philosopher {
                     }
                 }
 
-                if (Math.random() > 0.999) {
-                    if (playingOnLeft) Handler.I.stopPlayingOnLeft();
-                    else Handler.I.stopPlayingOnRight();
+                if (!manualMode && Math.random() > 0.999) {
+                    stopPlayingAndNotify();
                     return false;
                 }
                 return true;
@@ -132,9 +137,15 @@ public class Philosopher {
                 return true;
             }
         } else {
-            iWantToPlay = Math.random() > .999;
+            if(!manualMode )
+                iWantToPlay = Math.random() > .999;
         }
         return false;
+    }
+
+    private void stopPlayingAndNotify() {
+        if (playingOnLeft) Handler.I.stopPlayingOnLeft();
+        else Handler.I.stopPlayingOnRight();
     }
 
     private void drinkingPhilosopher(long currentTime) {
@@ -142,11 +153,12 @@ public class Philosopher {
             passOut(currentTime);
         }
 
-        if (!thirsty && Math.random() < 0.001) {
+        if (!manualMode && !thirsty && Math.random() < 0.001) {
             thirsty = true;
+            System.out.println("Now thirsty.");
         } else if (thirsty) {
             //random chance to put down cup
-            if (thirsty && hasCup && Math.random() < 0.0001) {
+            if (!manualMode && thirsty && hasCup && Math.random() < 0.0001) {
                 notThirsty();
             }
             //start drinking
@@ -162,10 +174,10 @@ public class Philosopher {
         this.thirsty = false;
         if (hasCup) Handler.I.clearCup();
         this.hasCup = false;
-        System.out.println("No Longer Thirsty Drinking");
+        System.out.println("No Longer Thirsty");
     }
 
-    private void passOut(long currentTime) {
+    public void passOut(long currentTime) {
         synchronized (this) {
             if (hasCup) Handler.I.clearCup();
             if (hasLeftChopstick) Handler.I.clearLeftChopStick();
@@ -204,13 +216,14 @@ public class Philosopher {
         }
 
         if (this.timeLastAte + Settings.starvationTime < currentTime) {
+            passOut(currentTime);
             System.err.println("I starved");
             System.exit(1);
         }
 
-        if (shouldStopEating(currentTime)) { // check how long we've been eating and stop if necessary
+        if (!manualMode  && shouldStopEating(currentTime)) { // check how long we've been eating and stop if necessary
             nowThinking(currentTime);
-        } else if (shouldStopThinking(currentTime)) { // Don't think for more than 1 second
+        } else if (!manualMode  && shouldStopThinking(currentTime)) { // Don't think for more than 1 second
             this.nowHungry(currentTime);
         } else if (shouldWaitABit(currentTime)) {
             waitABit();
@@ -221,13 +234,6 @@ public class Philosopher {
             System.out.println("I NEED THINGS");
             if (!hasLeftChopstick) Handler.I.requestLeftChopStick();
             if (!hasRightChopstick) Handler.I.requestRightChopStick();
-
-
-
-//            if(!isEating()) {
-//                if(hasLeftChopstick) Handler.I.clearLeftChopStick();
-//                if(hasRightChopstick) Handler.I.clearRightChopStick();
-//            }
         }
     }
 
@@ -317,5 +323,20 @@ public class Philosopher {
 
     public synchronized void stopPlaying() {
         this.iWantToPlay = false;
+    }
+
+    public boolean wantsToPlay() {
+        return iWantToPlay;
+    }
+
+    public void setWantsToPlay(boolean b) {
+        if(playing && !b && iWantToPlay)
+            stopPlayingAndNotify();
+
+        iWantToPlay = b;
+    }
+
+    public boolean isPassedOut() {
+        return isPassedOut;
     }
 }

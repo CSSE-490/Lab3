@@ -95,7 +95,7 @@ public enum Handler implements Watcher {
 
                 switch (message) {
                     case "START":
-                        Philosopher.INSTANCE.wakeUp();
+                        Philosopher.INSTANCE.startLogicLoop();
                         break;
 //                    case "TICK_RATE":
 //                        break;

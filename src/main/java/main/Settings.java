@@ -4,6 +4,7 @@ public final class Settings {
     public static int numberPhilosopher;
     public static long starvationTime;
     public static int whoAmI;
+    public static boolean manualMode;
 
 
     public static int mod(int number, int mod) {
