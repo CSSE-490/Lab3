@@ -32,3 +32,13 @@ dependencies {
     // 'test.useTestNG()' to your build script.
     testCompile 'junit:junit:4.12'
 }
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Version': '1.0.0',
+                'Main-Class': 'main.ZooStart'
+    }
+    baseName = 'Lab3'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
